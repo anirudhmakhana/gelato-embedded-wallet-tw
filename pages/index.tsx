@@ -1,24 +1,97 @@
 import {
+  ConnectWallet,
+  Web3Button,
   useAddress,
   useConnectionStatus,
   useDisconnect,
   useEmbeddedWallet,
   useWallet,
+  useContract,
+  useContractRead,
 } from "@thirdweb-dev/react";
 import styles from "../styles/Home.module.css";
 import { NextPage } from "next";
 import { useEffect, useState } from "react";
 
+const contractAddress = "0x803e3B9f424167B75843c3f831F20F7d770260D9";
+const abi = [
+  {
+    anonymous: false,
+    inputs: [],
+    name: "GetPriceEvent",
+    type: "event",
+  },
+  {
+    anonymous: false,
+    inputs: [
+      {
+        indexed: true,
+        internalType: "uint256",
+        name: "timeStamp",
+        type: "uint256",
+      },
+      {
+        indexed: false,
+        internalType: "uint256",
+        name: "price",
+        type: "uint256",
+      },
+    ],
+    name: "PriceUpdated",
+    type: "event",
+  },
+  {
+    inputs: [],
+    name: "getPrice",
+    outputs: [],
+    stateMutability: "nonpayable",
+    type: "function",
+  },
+  {
+    inputs: [],
+    name: "price",
+    outputs: [
+      {
+        internalType: "uint256",
+        name: "",
+        type: "uint256",
+      },
+    ],
+    stateMutability: "view",
+    type: "function",
+  },
+  {
+    inputs: [
+      {
+        internalType: "uint256",
+        name: "_price",
+        type: "uint256",
+      },
+    ],
+    name: "updatePrice",
+    outputs: [],
+    stateMutability: "nonpayable",
+    type: "function",
+  },
+];
+
 const Home: NextPage = () => {
   const address = useAddress();
   const connectedWallet = useWallet("embeddedWallet");
+  const { contract } = useContract(contractAddress, abi);
+  const { data: price, refetch: fetchPrice } = useContractRead(
+    contract,
+    "price"
+  );
   const [email, setEmail] = useState<string | undefined>();
   const connectionStatus = useConnectionStatus();
   const disconnect = useDisconnect();
+  const [chainId, setChainId] = useState<number | undefined>();
 
   useEffect(() => {
     if (connectedWallet) {
       connectedWallet?.getEmail().then((email) => setEmail(email));
+      connectedWallet.getChainId().then((chainId) => setChainId(chainId));
     }
   }, [connectedWallet]);
 
@@ -35,24 +108,36 @@ const Home: NextPage = () => {
                   target="_blank"
                   rel="noopener noreferrer"
                 >
-                  thirdweb.
+                  Gelato.
                 </a>
               </span>
             </h1>
+            <ConnectWallet />
             {address ? (
               <>
                 <h3>Connected as {email}</h3>
                 <p>Your wallet: {address}</p>
+                <p>Connected chain ID: {chainId}</p>
                 <button className={styles.button} onClick={disconnect}>
                   Log out
                 </button>
+                <div>
+                  <h1>
+                    Current Price: {price ? price.toString() : "Loading..."}
+                  </h1>
+                  <Web3Button
+                    contractAddress={contractAddress}
+                    action={async (contract) => await contract.call("getPrice")}
+                    onSuccess={fetchPrice}
+                  >
+                    Get Price
+                  </Web3Button>
+                </div>
               </>
             ) : (
               <>
                 {connectionStatus == "disconnected" ? (
-                  <>
-                    <CustomLogin />
-                  </>
+                  <CustomLogin />
                 ) : (
                   <div className={styles.spinner} />
                 )}
@@ -104,7 +189,7 @@ const CustomGoogleSignInButton = () => {
 // Handles login with email
 const CustomLogin = () => {
   const [state, setState] = useState<
-    "init" | "emter_email" | "sending_email" | "email_verification"
+    "init" | "enter_email" | "sending_email" | "email_verification"
   >("init");
 
   const [email, setEmail] = useState<string>("");
@@ -112,7 +197,7 @@ const CustomLogin = () => {
   const { connect, sendVerificationEmail } = useEmbeddedWallet();
 
   const handleEmailClicked = async () => {
-    setState("emter_email");
+    setState("enter_email");
   };
 
   const handleEmailEntered = async () => {
@@ -127,13 +212,13 @@ const CustomLogin = () => {
 
   const handleEmailVerification = async () => {
     if (!email || !verificationCode) {
-      alert("Please enter an verification code");
+      alert("Please enter a verification code");
       return;
     }
     await connect({ strategy: "email_verification", email, verificationCode });
   };
 
-  if (state === "emter_email") {
+  if (state === "enter_email") {
     return (
       <>
         <p>Enter your email</p>
