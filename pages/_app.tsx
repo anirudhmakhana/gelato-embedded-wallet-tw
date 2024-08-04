@@ -27,7 +27,7 @@ const customChain = {
   name: "Arbitrum Blueberry", // Name of the network
 };
 
-//PTqpNkCgAK0u2zHUcjbj45owTRB5qB4RXX300uT51ux0702FS18Z5gsWkKYNw4WTNTxF5_UM22E3yelpH2p0-Q
+
 function MyApp({ Component, pageProps }: AppProps) {
   return (
     <ThirdwebProvider
