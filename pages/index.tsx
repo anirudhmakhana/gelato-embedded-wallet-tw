@@ -87,6 +87,7 @@ const Home: NextPage = () => {
   const connectionStatus = useConnectionStatus();
   const disconnect = useDisconnect();
   const [chainId, setChainId] = useState<number | undefined>();
+  const [newPrice, setNewPrice] = useState<string>("");
 
   useEffect(() => {
     if (connectedWallet) {
@@ -115,22 +116,73 @@ const Home: NextPage = () => {
             <ConnectWallet />
             {address ? (
               <>
-                <h3>Connected as {email}</h3>
-                <p>Your wallet: {address}</p>
-                <p>Connected chain ID: {chainId}</p>
+                <div style={{
+                  display: 'flex',
+                  justifyContent: 'space-around', // Espace entre les blocs
+                  alignItems: 'center',
+                  height: '30vh',
+                  textAlign: 'center',
+                }}>
+                  <div style={{
+                    display: 'flex',
+                    flexDirection: 'column',
+                    justifyContent: 'left',
+                    alignItems: 'left',
+                    textAlign: 'center'
+                  }}>
+                    <h3>💻 Connected as</h3>
+                    <p style={{ margin: 0 }}>{email}</p>
+                  </div>
+                  <div style={{
+                    display: 'flex',
+                    flexDirection: 'column',
+                    justifyContent: 'center',
+                    alignItems: 'center',
+                    textAlign: 'center'
+                  }}>
+                    <h3>💳 Wallet Address </h3>
+                    <p style={{ margin: 0 }}>{`${address.slice(0, 5)}...${address.slice(-5)}`}</p>
+                  </div>
+                  <div style={{
+                    display: 'flex',
+                    flexDirection: 'column',
+                    justifyContent: 'center',
+                    alignItems: 'center',
+                    textAlign: 'center'
+                  }}>
+                    <h3>⛓️ Chain ID</h3>
+                    <p style={{ margin: 0 }}>{chainId}</p>
+                  </div>
+                </div>
                 <button className={styles.button} onClick={disconnect}>
                   Log out
                 </button>
                 <div>
-                  <h1>
-                    Current Price: {price ? price.toString() : "Loading..."}
-                  </h1>
+                  <h2>
+                    Current Price: {price ? '$' + price.toString() : "Loading..."}
+                  </h2>
                   <Web3Button
                     contractAddress={contractAddress}
                     action={async (contract) => await contract.call("getPrice")}
                     onSuccess={fetchPrice}
+                    style={{ background: 'linear-gradient(90deg, #ff7e5f, #feb47b)' }}
                   >
                     Get Price
+                  </Web3Button>
+                  <input
+                    className={styles.input}
+                    type="number"
+                    placeholder="Enter new price"
+                    value={newPrice}
+                    onChange={(e) => setNewPrice(e.target.value)}
+                  />
+                  <Web3Button
+                    contractAddress={contractAddress}
+                    style={{ background: 'linear-gradient(90deg, #ff7e5f, #feb47b)' }}
+                    action={async (contract) => await contract.call("updatePrice", [newPrice])}
+                    onSuccess={fetchPrice}
+                  >
+                    Set Price
                   </Web3Button>
                 </div>
               </>
